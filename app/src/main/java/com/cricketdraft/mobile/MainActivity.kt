@@ -22,6 +22,8 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.SportsCricket
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Button
@@ -43,6 +45,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -288,40 +291,64 @@ private fun DraftEntryScreen(onBrowse: () -> Unit, onBack: () -> Unit) {
 
 @Composable
 private fun LoginScreen(error: String? = null, onLogin: (String, String, String) -> Unit) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+    var passwordVisible by rememberSaveable { mutableStateOf(false) }
     val canSubmit = email.isNotBlank() && password.isNotBlank()
     val submit = { if (canSubmit) onLogin(email.trim(), password, "cricket-draft-android") }
-    Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center) {
-        Text("CRICKET DRAFT OS", color = CricketDraftColors.Green, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(10.dp))
-        Text("Welcome back", color = CricketDraftColors.Ink, style = MaterialTheme.typography.headlineLarge)
-        Text("Sign in to manage your tournaments or follow live cricket.", color = CricketDraftColors.Muted, modifier = Modifier.padding(top = 6.dp, bottom = 24.dp))
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Email address") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
-        )
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Password") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { submit() }),
-        )
-        if (error != null) {
-            Text(error, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 10.dp))
+    Column(
+        Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 32.dp),
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Card(
+            Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = CricketDraftColors.Surface),
+            border = androidx.compose.foundation.BorderStroke(1.dp, CricketDraftColors.Border),
+        ) {
+            Column(Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Surface(color = CricketDraftColors.Lime, shape = RoundedCornerShape(14.dp)) {
+                    Text("CD", color = CricketDraftColors.DeepGreen, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp))
+                }
+                Text("CRICKET DRAFT OS", color = CricketDraftColors.Green, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text("Welcome back", color = CricketDraftColors.Ink, style = MaterialTheme.typography.headlineLarge)
+                Text("Sign in to manage tournaments, squads, and live cricket.", color = CricketDraftColors.Muted)
+                Spacer(Modifier.height(4.dp))
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Email address") },
+                    singleLine = true,
+                    isError = error != null,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                )
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Password") },
+                    singleLine = true,
+                    isError = error != null,
+                    visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { submit() }),
+                    trailingIcon = {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                            )
+                        }
+                    },
+                )
+                if (error != null) {
+                    Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
+                PrimaryAction("Sign in", submit, Modifier.fillMaxWidth(), canSubmit)
+                Text("Your role determines which workspace you see after sign in.", color = CricketDraftColors.Muted, style = MaterialTheme.typography.bodySmall)
+            }
         }
-        Spacer(Modifier.height(18.dp))
-        PrimaryAction("Sign in", submit, Modifier.fillMaxWidth(), canSubmit)
-        Text("Your account access determines which workspace you see.", color = CricketDraftColors.Muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 14.dp))
     }
 }
 
