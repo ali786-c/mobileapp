@@ -28,8 +28,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cricketdraft.mobile.core.ui.CricketDraftColors
+import com.cricketdraft.mobile.core.ui.CricketDraftSpacing
 import com.cricketdraft.mobile.core.ui.LoadingState
+import com.cricketdraft.mobile.core.ui.MetricCard
 import com.cricketdraft.mobile.core.ui.PrimaryAction
+import com.cricketdraft.mobile.core.ui.ScreenHeader
 import com.cricketdraft.mobile.core.ui.SectionTitle
 import com.cricketdraft.mobile.core.ui.StateCard
 import com.cricketdraft.mobile.core.ui.StatusChip
@@ -39,9 +42,9 @@ private val Statuses = listOf("draft", "registration", "ready", "live", "complet
 @Composable
 fun AdminTournamentScreen(onBack: () -> Unit, viewModel: AdminTournamentViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { TextButton(onClick = onBack) { Text("← Back", color = CricketDraftColors.Green) } }
-        item { SectionTitle("Tournament control", "Manage the event lifecycle and monitor the numbers that matter.") }
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(CricketDraftSpacing.Screen), verticalArrangement = Arrangement.spacedBy(CricketDraftSpacing.Section)) {
+        item { ScreenHeader("Tournament operations", "Manage lifecycle, squads, fixtures, draft, and reports.", onBack = onBack) }
+        item { StateCard("Server-controlled workflow", "Status changes are validated by Laravel. If a transition is invalid, the app will keep the current status and show the server response.") }
         when (val value = state) {
             AdminTournamentState.Loading -> item { LoadingState("Loading your tournaments…") }
             is AdminTournamentState.Error -> item { StateCard("Could not load tournaments", value.message, actionText = "Try again", onAction = viewModel::load) }
@@ -51,16 +54,26 @@ fun AdminTournamentScreen(onBack: () -> Unit, viewModel: AdminTournamentViewMode
                     var expanded by remember { mutableStateOf(false) }
                     Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = CricketDraftColors.Surface), border = androidx.compose.foundation.BorderStroke(1.dp, CricketDraftColors.Border)) {
                         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Text(tournament.name, color = CricketDraftColors.Ink, fontWeight = FontWeight.Bold)
-                            Text("${tournament.teamsCount} teams · ${tournament.playersCount} players · ${tournament.fixturesCount} fixtures", color = CricketDraftColors.Muted, style = MaterialTheme.typography.bodyMedium)
+                            Text(tournament.name, color = CricketDraftColors.Ink, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                            Text("Operational overview", color = CricketDraftColors.Muted, style = MaterialTheme.typography.bodySmall)
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                MetricCard("Teams", tournament.teamsCount.toString(), modifier = Modifier.weight(1f))
+                                MetricCard("Players", tournament.playersCount.toString(), modifier = Modifier.weight(1f))
+                                MetricCard("Fixtures", tournament.fixturesCount.toString(), modifier = Modifier.weight(1f))
+                            }
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text("Current status", color = Color.Gray)
                                 StatusChip(tournament.status)
                             }
                             Text("${tournament.matchesCount} matches connected to this event", color = CricketDraftColors.Muted)
-                            PrimaryAction("Move tournament", { expanded = true }, Modifier.fillMaxWidth())
+                            PrimaryAction("Change tournament status", { expanded = true }, Modifier.fillMaxWidth())
                             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                                Statuses.forEach { status -> DropdownMenuItem(text = { Text("Move to ${status.replaceFirstChar { it.uppercase() }}") }, onClick = { expanded = false; viewModel.changeStatus(tournament.slug, status) }) }
+                                Statuses.forEach { status ->
+                                    DropdownMenuItem(
+                                        text = { Text("Move to ${status.replaceFirstChar { it.uppercase() }}") },
+                                        onClick = { expanded = false; viewModel.changeStatus(tournament.slug, status) },
+                                    )
+                                }
                             }
                         }
                     }
