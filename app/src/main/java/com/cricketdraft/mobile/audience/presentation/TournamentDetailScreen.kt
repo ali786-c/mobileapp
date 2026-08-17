@@ -68,16 +68,17 @@ fun TournamentDetailScreen(slug: String, onBack: () -> Unit, onReports: () -> Un
                 items(value.fixtures, key = { it.id }) { fixture ->
                     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White), shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)) {
                         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Text("${fixture.homeTeam.name} vs ${fixture.awayTeam.name}", color = CricketDraftColors.Ink, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                            StatusChip(fixture.status)
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text("${fixture.homeTeam.name} vs ${fixture.awayTeam.name}", color = CricketDraftColors.Ink, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                                StatusChip(fixture.status)
+                            }
+                            Text(fixture.scheduledAt ?: "Time to be announced", color = CricketDraftColors.Green)
+                            Text(fixture.venue ?: fixture.city ?: "Venue to be announced", color = CricketDraftColors.Muted)
+                            fixture.matchId?.let { matchId ->
+                                TextButton(onClick = { onMatch(matchId) }) { Text("Open scorecard", color = CricketDraftColors.Green, fontWeight = FontWeight.Bold) }
+                            }
+                            HorizontalDivider(color = CricketDraftColors.Border)
                         }
-                        Text(fixture.scheduledAt ?: "Time to be announced", color = CricketDraftColors.Green)
-                        Text(fixture.venue ?: fixture.city ?: "Venue to be announced", color = CricketDraftColors.Muted)
-                        fixture.matchId?.let { matchId ->
-                            TextButton(onClick = { onMatch(matchId) }) { Text("Open scorecard", color = CricketDraftColors.Green, fontWeight = FontWeight.Bold) }
-                        }
-                        HorizontalDivider(color = CricketDraftColors.Border)
                     }
                 }
                 item { SectionTitle("Standings", "Points and net run rate after approved results.") }
