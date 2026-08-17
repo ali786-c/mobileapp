@@ -21,7 +21,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cricketdraft.mobile.core.ui.CricketDraftColors
+import com.cricketdraft.mobile.core.ui.CricketDraftSpacing
 import com.cricketdraft.mobile.core.ui.LoadingState
+import com.cricketdraft.mobile.core.ui.MetricCard
+import com.cricketdraft.mobile.core.ui.ScreenHeader
 import com.cricketdraft.mobile.core.ui.SectionTitle
 import com.cricketdraft.mobile.core.ui.StateCard
 import com.cricketdraft.mobile.core.ui.StatusChip
@@ -29,27 +32,27 @@ import com.cricketdraft.mobile.core.ui.StatusChip
 @Composable
 fun SuperAdminScreen(onBack: () -> Unit, viewModel: SuperAdminViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { TextButton(onClick = onBack) { Text("← Back", color = CricketDraftColors.Green) } }
-        item { SectionTitle("Platform governance", "Monitor the health of every tournament, account, session, and API client.") }
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = androidx.compose.foundation.layout.PaddingValues(CricketDraftSpacing.Screen), verticalArrangement = Arrangement.spacedBy(CricketDraftSpacing.Section)) {
+        item { ScreenHeader("Platform governance", "Monitor tournaments, accounts, sessions, and API clients.", onBack = onBack) }
+        item { StateCard("Super Admin control center", "Use this workspace for platform-level visibility. Tournament-level actions remain inside each admin operations workspace.") }
         when (val value = state) {
             SuperAdminState.Loading -> item { LoadingState("Checking platform health…") }
             is SuperAdminState.Error -> item { StateCard("Governance data unavailable", value.message, actionText = "Try again", onAction = viewModel::load) }
             is SuperAdminState.Ready -> {
                 val dashboard = value.dashboard
                 val metrics = listOf("Users" to dashboard.users, "Tournaments" to dashboard.tournaments, "Live matches" to dashboard.liveMatches, "Pending registrations" to dashboard.pendingRegistrations, "API clients" to dashboard.apiClients, "Active sessions" to dashboard.activeSessions)
-                item { SectionTitle("At a glance", "A quick view of platform activity.") }
+                item { SectionTitle("At a glance", "A quick view of platform activity and attention areas.") }
                 items(metrics.chunked(2)) { pair ->
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         pair.forEach { (label, count) ->
-                            Card(Modifier.weight(1f), colors = CardDefaults.cardColors(containerColor = Color.White)) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) { Text(count.toString(), color = CricketDraftColors.Ink, style = androidx.compose.material3.MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold); Text(label, color = CricketDraftColors.Muted) } }
+                            MetricCard(label, count.toString(), modifier = Modifier.weight(1f))
                         }
                         if (pair.size == 1) Column(Modifier.weight(1f)) {}
                     }
                 }
                 item { SectionTitle("System health", "These checks describe whether the platform is ready for users.") }
                 item {
-                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White), shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Application", color = CricketDraftColors.Ink); StatusChip(value.health.application) }
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Database", color = CricketDraftColors.Ink); StatusChip(value.health.database) }
