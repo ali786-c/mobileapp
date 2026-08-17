@@ -24,8 +24,11 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cricketdraft.mobile.core.ui.CricketDraftColors
+import com.cricketdraft.mobile.core.ui.CricketDraftSpacing
 import com.cricketdraft.mobile.core.ui.LoadingState
+import com.cricketdraft.mobile.core.ui.MetricCard
 import com.cricketdraft.mobile.core.ui.PrimaryAction
+import com.cricketdraft.mobile.core.ui.ScreenHeader
 import com.cricketdraft.mobile.core.ui.SectionTitle
 import com.cricketdraft.mobile.core.ui.StateCard
 import com.cricketdraft.mobile.core.ui.StatusChip
@@ -34,14 +37,14 @@ import com.cricketdraft.mobile.core.ui.StatusChip
 fun TournamentDetailScreen(slug: String, onBack: () -> Unit, onReports: () -> Unit = {}, onMatch: (Long) -> Unit = {}, viewModel: TournamentDetailViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(slug) { viewModel.load(slug) }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { TextButton(onClick = onBack) { Text("← Back to tournaments", color = CricketDraftColors.Green) } }
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(CricketDraftSpacing.Screen), verticalArrangement = Arrangement.spacedBy(CricketDraftSpacing.Section)) {
+        item { ScreenHeader("Tournament overview", "Follow fixtures, standings, and live scorecards.", onBack = onBack) }
         when (val value = state) {
             TournamentDetailState.Loading -> item { LoadingState("Loading tournament details…") }
             is TournamentDetailState.Error -> item { StateCard("Tournament unavailable", value.message) }
             is TournamentDetailState.Ready -> {
                 item {
-                    Card(colors = CardDefaults.cardColors(containerColor = CricketDraftColors.DeepGreen), shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)) {
+                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = CricketDraftColors.DeepGreen), shape = androidx.compose.foundation.shape.RoundedCornerShape(24.dp)) {
                         Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text(value.tournament.name, color = Color.White, fontWeight = FontWeight.ExtraBold, modifier = Modifier.weight(1f))
@@ -55,14 +58,16 @@ fun TournamentDetailScreen(slug: String, onBack: () -> Unit, onReports: () -> Un
                 }
                 item {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        PrimaryAction("Open reports", onReports, Modifier.weight(1f))
-                        TextButton(onClick = onBack) { Text("Back", color = CricketDraftColors.Green) }
+                        MetricCard("Fixtures", value.fixtures.size.toString(), "Scheduled matches", Modifier.weight(1f))
+                        MetricCard("Teams", value.standings.size.toString(), "In the table", Modifier.weight(1f))
                     }
                 }
+                item { PrimaryAction("Open tournament reports", onReports, Modifier.fillMaxWidth()) }
                 item { SectionTitle("Fixtures", "See when teams play and follow live matches from here.") }
                 if (value.fixtures.isEmpty()) item { StateCard("No fixtures published yet", "The admin will publish match times and venues here.") }
                 items(value.fixtures, key = { it.id }) { fixture ->
-                    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White), shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)) {
+                        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("${fixture.homeTeam.name} vs ${fixture.awayTeam.name}", color = CricketDraftColors.Ink, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                             StatusChip(fixture.status)

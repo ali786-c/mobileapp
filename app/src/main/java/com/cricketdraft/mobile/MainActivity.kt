@@ -5,6 +5,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -28,6 +29,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.KeyboardType
@@ -44,8 +46,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -181,6 +184,8 @@ private fun HomeScreen(
     viewModel: TournamentViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    var statusFilter by rememberSaveable { mutableStateOf("All") }
     LazyColumn(contentPadding = PaddingValues(CricketDraftSpacing.Screen), verticalArrangement = Arrangement.spacedBy(CricketDraftSpacing.Section)) {
         item {
             if (isExplore) {
@@ -225,12 +230,44 @@ private fun HomeScreen(
             )
         }
         if (!isExplore) item { SectionTitle("Public tournaments", "Browse events, fixtures, standings, and live updates.") }
+        if (isExplore) item {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Search tournaments") },
+                singleLine = true,
+            )
+        }
+        if (isExplore) item {
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf("All", "Live", "Registration", "Completed").forEach { filter ->
+                    FilterChip(
+                        selected = statusFilter == filter,
+                        onClick = { statusFilter = filter },
+                        label = { Text(filter) },
+                    )
+                }
+            }
+        }
         when (val value = state) {
             TournamentListState.Loading -> item { LoadingState() }
             is TournamentListState.Error -> item { StateCard("Could not load tournaments", value.message, actionText = "Try again", onAction = { viewModel.load() }) }
             is TournamentListState.Ready -> {
-                if (value.tournaments.isEmpty()) item { StateCard("No tournaments yet", "When an event becomes public, it will appear here.") }
-                items(value.tournaments, key = { it.id }) { tournament ->
+                val visibleTournaments = value.tournaments.filter { tournament ->
+                    val matchesQuery = searchQuery.isBlank() ||
+                        tournament.name.contains(searchQuery, ignoreCase = true) ||
+                        (tournament.city ?: tournament.location.orEmpty()).contains(searchQuery, ignoreCase = true)
+                    val matchesStatus = statusFilter == "All" || tournament.status.equals(statusFilter, ignoreCase = true)
+                    matchesQuery && matchesStatus
+                }
+                if (visibleTournaments.isEmpty()) item {
+                    StateCard(
+                        if (value.tournaments.isEmpty()) "No tournaments yet" else "No matching tournaments",
+                        if (value.tournaments.isEmpty()) "When an event becomes public, it will appear here." else "Try another search term or clear the status filter.",
+                    )
+                }
+                items(visibleTournaments, key = { it.id }) { tournament ->
                     Card(Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
                         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
