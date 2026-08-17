@@ -28,6 +28,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -244,17 +248,37 @@ private fun DraftEntryScreen(onBrowse: () -> Unit, onBack: () -> Unit) {
 private fun LoginScreen(error: String? = null, onLogin: (String, String, String) -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    val canSubmit = email.isNotBlank() && password.isNotBlank()
+    val submit = { if (canSubmit) onLogin(email.trim(), password, "cricket-draft-android") }
     Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.Center) {
         Text("CRICKET DRAFT OS", color = CricketDraftColors.Green, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(10.dp))
         Text("Welcome back", color = CricketDraftColors.Ink, style = MaterialTheme.typography.headlineLarge)
         Text("Sign in to manage your tournaments or follow live cricket.", color = CricketDraftColors.Muted, modifier = Modifier.padding(top = 6.dp, bottom = 24.dp))
-        OutlinedTextField(email, { email = it }, Modifier.fillMaxWidth(), label = { Text("Email address") }, singleLine = true)
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Email address") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+        )
         Spacer(Modifier.height(12.dp))
-        OutlinedTextField(password, { password = it }, Modifier.fillMaxWidth(), label = { Text("Password") }, singleLine = true, visualTransformation = PasswordVisualTransformation())
-        if (error != null) Text(error, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 10.dp))
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text("Password") },
+            singleLine = true,
+            visualTransformation = PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { submit() }),
+        )
+        if (error != null) {
+            Text(error, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 10.dp))
+        }
         Spacer(Modifier.height(18.dp))
-        PrimaryAction("Sign in", { onLogin(email.trim(), password, "cricket-draft-android") }, Modifier.fillMaxWidth(), email.isNotBlank() && password.isNotBlank())
+        PrimaryAction("Sign in", submit, Modifier.fillMaxWidth(), canSubmit)
         Text("Your account access determines which workspace you see.", color = CricketDraftColors.Muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 14.dp))
     }
 }

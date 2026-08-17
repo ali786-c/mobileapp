@@ -7,7 +7,12 @@ plugins {
     id("com.google.devtools.ksp")
 }
 
-val configuredReleaseApiUrl = providers.gradleProperty("API_BASE_URL").orElse("https://configure-before-release.invalid/api/v1/").get()
+val configuredApiUrl = providers.gradleProperty("API_BASE_URL")
+    .orElse("https://cricket.careerinpak.com/api/v1/")
+    .get()
+val configuredClientSlug = providers.gradleProperty("API_CLIENT_SLUG")
+    .orElse("")
+    .get()
 
 android {
     namespace = "com.cricketdraft.mobile"
@@ -21,14 +26,15 @@ android {
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnit4"
         vectorDrawables { useSupportLibrary = true }
-        buildConfigField("String", "API_BASE_URL", "\"$configuredReleaseApiUrl\"")
+        buildConfigField("String", "API_BASE_URL", "\"$configuredApiUrl\"")
+        buildConfigField("String", "API_CLIENT_SLUG", "\"$configuredClientSlug\"")
     }
 
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:8000/api/v1/\"")
+            buildConfigField("String", "API_BASE_URL", "\"$configuredApiUrl\"")
         }
         release {
             isMinifyEnabled = false

@@ -7,7 +7,8 @@
         android:allowBackup="false"
         android:label="Cricket Draft OS"
         android:supportsRtl="true"
-        android:theme="@style/Theme.CricketDraft">
+        android:theme="@style/Theme.CricketDraft"
+        android:enableOnBackInvokedCallback="true">
         <activity
             android:name=".MainActivity"
             android:exported="true">

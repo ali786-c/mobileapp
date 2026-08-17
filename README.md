@@ -15,13 +15,37 @@ The foundation currently includes:
 
 ## API configuration
 
-Debug builds target the Android emulator host using:
+The app targets the hosted Laravel API over HTTPS by default:
 
 ```text
-http://10.0.2.2:8000/api/v1/
+https://cricket.careerinpak.com/api/v1/
 ```
 
-Set the release `BuildConfig.API_BASE_URL` to the deployed Laravel API URL before building a production release. The Laravel login request requires `email`, `password`, and `device_name`.
+The app supports the Laravel API client slug `cricket-draft-android`, but the slug is sent only when it is explicitly configured at build time. This is intentional because the currently hosted database rejected that slug as unregistered during verification. The login payload always includes `email`, `password`, and `device_name`; `client_slug` is added when API client governance is enabled.
+
+For a local Laravel server running on the Android emulator, override both values explicitly. `10.0.2.2` is only appropriate for emulator-to-host networking and local HTTP requires an explicit network-security configuration; the hosted HTTPS default avoids the cleartext failure shown in the previous logcat:
+
+```bash
+./gradlew assembleDebug \\
+  -PAPI_BASE_URL=http://10.0.2.2:8000/api/v1/
+```
+
+For the hosted environment, the normal debug build is sufficient:
+
+```bash
+./gradlew assembleDebug \\
+  -PAPI_BASE_URL=https://cricket.careerinpak.com/api/v1/
+```
+
+After creating and activating the API client in Super Admin, enforce it in the app build:
+
+```bash
+./gradlew assembleDebug \\
+  -PAPI_BASE_URL=https://cricket.careerinpak.com/api/v1/ \\
+  -PAPI_CLIENT_SLUG=cricket-draft-android
+```
+
+Never commit real credentials or tokens. The app stores the Sanctum token only after a successful login using encrypted Android preferences.
 
 ## Local build prerequisites
 
@@ -50,7 +74,8 @@ The client now includes typed JSON reports for public, captain, and admin audien
 Before a release build, pass the deployed API URL explicitly:
 
 ```bash
-./gradlew assembleRelease -PAPI_BASE_URL=https://your-domain.example/api/v1/
+./gradlew assembleRelease \\
+  -PAPI_BASE_URL=https://cricket.careerinpak.com/api/v1/
 ```
 
-The default release URL is deliberately invalid so a production build cannot silently point at a placeholder server.
+After the Super Admin creates the active `cricket-draft-android` client, pass `-PAPI_CLIENT_SLUG=cricket-draft-android` to enforce the registered client. The hosted HTTPS URL is the safe default for both debug and release builds.

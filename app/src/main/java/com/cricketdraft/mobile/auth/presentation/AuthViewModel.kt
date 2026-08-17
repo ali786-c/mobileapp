@@ -2,6 +2,7 @@ package com.cricketdraft.mobile.auth.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.cricketdraft.mobile.BuildConfig
 import com.cricketdraft.mobile.auth.data.AuthApi
 import com.cricketdraft.mobile.auth.data.LoginRequest
 import com.cricketdraft.mobile.auth.data.UserPayload
@@ -48,7 +49,16 @@ class AuthViewModel @Inject constructor(
     fun login(email: String, password: String, deviceName: String = "cricket-draft-android") {
         viewModelScope.launch {
             _state.value = SessionState.Loading
-            runCatching { authApi.login(LoginRequest(email, password, deviceName)) }
+            runCatching {
+                authApi.login(
+                    LoginRequest(
+                        email = email.trim(),
+                        password = password,
+                        deviceName = deviceName,
+                        clientSlug = BuildConfig.API_CLIENT_SLUG.takeIf { it.isNotBlank() },
+                    ),
+                )
+            }
                 .onSuccess {
                     tokenStore.save(it.token)
                     _state.value = SessionState.SignedIn(it.data)
@@ -66,9 +76,16 @@ class AuthViewModel @Inject constructor(
     }
 }
 
-private fun friendlyAuthError(error: Throwable): String = when {
-    error.message?.contains("401") == true -> "Email or password is incorrect."
-    error.message?.contains("429") == true -> "Too many attempts. Please wait a moment and try again."
-    error.message?.contains("Unable to resolve host") == true -> "No internet connection. Check your network and try again."
-    else -> "We could not sign you in. Please check your details and try again."
+private fun friendlyAuthError(error: Throwable): String {
+    val message = error.message.orEmpty()
+    return when {
+        message.contains("401") -> "Email or password is incorrect."
+        message.contains("422") -> "The API client is not configured correctly. Please contact the administrator."
+        message.contains("429") -> "Too many attempts. Please wait a moment and try again."
+        message.contains("Unable to resolve host") ||
+            message.contains("timeout", ignoreCase = true) ||
+            message.contains("CLEARTEXT", ignoreCase = true) ->
+            "Unable to connect to Cricket Draft. Check your internet connection and API configuration."
+        else -> "We could not sign you in. Please check your details and try again."
+    }
 }
