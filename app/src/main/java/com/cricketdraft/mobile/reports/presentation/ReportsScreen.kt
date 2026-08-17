@@ -23,7 +23,10 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cricketdraft.mobile.core.ui.CricketDraftColors
+import com.cricketdraft.mobile.core.ui.CricketDraftSpacing
 import com.cricketdraft.mobile.core.ui.LoadingState
+import com.cricketdraft.mobile.core.ui.MetricCard
+import com.cricketdraft.mobile.core.ui.ScreenHeader
 import com.cricketdraft.mobile.core.ui.SectionTitle
 import com.cricketdraft.mobile.core.ui.StateCard
 import com.cricketdraft.mobile.core.ui.StatusChip
@@ -32,8 +35,8 @@ import com.cricketdraft.mobile.core.ui.StatusChip
 fun ReportsScreen(tournamentSlug: String, audience: String, onBack: () -> Unit, viewModel: ReportsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     LaunchedEffect(tournamentSlug, audience) { viewModel.load(tournamentSlug, audience) }
-    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        item { TextButton(onClick = onBack) { Text("← Back", color = CricketDraftColors.Green) } }
+    LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(CricketDraftSpacing.Screen), verticalArrangement = Arrangement.spacedBy(CricketDraftSpacing.Section)) {
+        item { ScreenHeader("Tournament report", "Role-appropriate summary and confirmed tournament activity.", onBack = onBack) }
         when (val value = state) {
             ReportsState.Loading -> item { LoadingState("Preparing report…") }
             is ReportsState.Error -> item { StateCard("Report unavailable", value.message, actionText = "Try again", onAction = viewModel::retry) }
@@ -41,18 +44,22 @@ fun ReportsScreen(tournamentSlug: String, audience: String, onBack: () -> Unit, 
                 val report = value.report
                 item {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        SectionTitle(report.tournament.name, "${report.tournament.city ?: report.tournament.venue ?: "Venue to be announced"} · ${report.audience.replaceFirstChar { it.uppercase() }} view")
+                        SectionTitle(report.tournament.name, "${report.tournament.city ?: report.tournament.venue ?: "Venue to be announced"} · ${report.audience.replaceFirstChar { it.uppercase() }} view", Modifier.weight(1f))
                         StatusChip(report.tournament.status)
                     }
                 }
                 item { SectionTitle("Tournament summary", "A quick overview of this event.") }
                 item {
-                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        MetricCard("Teams", report.summary.teams.toString(), modifier = Modifier.weight(1f))
+                        MetricCard("Selected", report.summary.selectedPlayers.toString(), "Confirmed players", modifier = Modifier.weight(1f))
+                    }
+                }
+                item {
+                    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = Color.White), shape = androidx.compose.foundation.shape.RoundedCornerShape(18.dp)) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            MetricRow("Teams", report.summary.teams.toString())
                             MetricRow("Registered players", report.summary.registeredPlayers.toString())
                             MetricRow("Approved players", report.summary.approvedPlayers.toString())
-                            MetricRow("Selected players", report.summary.selectedPlayers.toString())
                             MetricRow("Draft status", report.summary.draftStatus.replaceFirstChar { it.uppercase() })
                         }
                     }
