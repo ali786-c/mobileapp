@@ -3,10 +3,15 @@ package com.cricketdraft.mobile.core.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -16,6 +21,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
@@ -38,6 +45,13 @@ object CricketDraftColors {
     val Success = Color(0xFF16794F)
     val Warning = Color(0xFF986B00)
     val Danger = Color(0xFFB42318)
+}
+
+object CricketDraftSpacing {
+    val Screen = 20.dp
+    val Section = 16.dp
+    val Card = 18.dp
+    val Compact = 8.dp
 }
 
 @Composable
@@ -88,10 +102,72 @@ fun SecondaryAction(text: String, onClick: () -> Unit, modifier: Modifier = Modi
 }
 
 @Composable
+fun ScreenHeader(
+    title: String,
+    subtitle: String? = null,
+    onBack: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (onBack != null) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Go back", tint = CricketDraftColors.Ink)
+            }
+        }
+        SectionTitle(title, subtitle, Modifier.weight(1f))
+    }
+}
+
+@Composable
 fun SectionTitle(title: String, subtitle: String? = null, modifier: Modifier = Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Text(title, style = MaterialTheme.typography.titleLarge, color = CricketDraftColors.Ink)
         subtitle?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = CricketDraftColors.Muted) }
+    }
+}
+
+@Composable
+fun MetricCard(label: String, value: String, supportingText: String? = null, modifier: Modifier = Modifier) {
+    Card(
+        modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = CricketDraftColors.Surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, CricketDraftColors.Border),
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(label.uppercase(), color = CricketDraftColors.Muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+            Text(value, color = CricketDraftColors.Ink, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
+            supportingText?.let { Text(it, color = CricketDraftColors.Muted, style = MaterialTheme.typography.bodySmall) }
+        }
+    }
+}
+
+@Composable
+fun LiveIndicator(isLive: Boolean, modifier: Modifier = Modifier) {
+    val color = if (isLive) CricketDraftColors.Success else CricketDraftColors.Warning
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+        Icon(Icons.Default.Circle, contentDescription = null, tint = color, modifier = Modifier.size(8.dp))
+        Text(if (isLive) "Live" else "Updating", color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+fun ActionCard(title: String, message: String, actionText: String, onAction: () -> Unit, modifier: Modifier = Modifier) {
+    Card(
+        modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = CricketDraftColors.DeepGreen),
+    ) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(title, color = CricketDraftColors.Lime, fontWeight = FontWeight.Bold)
+            Text(message, color = Color.White.copy(alpha = .82f), style = MaterialTheme.typography.bodyMedium)
+            Spacer(Modifier.height(2.dp))
+            PrimaryAction(actionText, onAction)
+        }
     }
 }
 
@@ -103,6 +179,23 @@ fun StateCard(title: String, message: String, modifier: Modifier = Modifier, act
             Text(message, color = CricketDraftColors.Muted, style = MaterialTheme.typography.bodyMedium)
             if (actionText != null && onAction != null) TextButton(onClick = onAction) { Text(actionText, color = CricketDraftColors.Green, fontWeight = FontWeight.Bold) }
         }
+    }
+}
+
+@Composable
+fun EmptyState(title: String, message: String, modifier: Modifier = Modifier, actionText: String? = null, onAction: (() -> Unit)? = null) {
+    StateCard(title, message, modifier, actionText, onAction)
+}
+
+@Composable
+fun ErrorState(title: String = "Something went wrong", message: String, modifier: Modifier = Modifier, actionText: String? = "Try again", onAction: (() -> Unit)? = null) {
+    StateCard(title, message, modifier, actionText, onAction)
+}
+
+@Composable
+fun OfflineBanner(message: String = "You are offline. Showing the latest saved information.", modifier: Modifier = Modifier) {
+    Surface(modifier.fillMaxWidth(), color = CricketDraftColors.Warning.copy(alpha = .12f), shape = RoundedCornerShape(12.dp)) {
+        Text(message, color = CricketDraftColors.Warning, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(12.dp))
     }
 }
 

@@ -64,10 +64,15 @@ import com.cricketdraft.mobile.auth.presentation.ProfileScreen
 import com.cricketdraft.mobile.auth.presentation.RegistrationScreen
 import com.cricketdraft.mobile.auth.presentation.SessionState
 import com.cricketdraft.mobile.admin.presentation.AdminTournamentScreen
+import com.cricketdraft.mobile.core.ui.ActionCard
 import com.cricketdraft.mobile.core.ui.CricketDraftColors
+import com.cricketdraft.mobile.core.ui.CricketDraftSpacing
 import com.cricketdraft.mobile.core.ui.CricketDraftTheme
+import com.cricketdraft.mobile.core.ui.LiveIndicator
 import com.cricketdraft.mobile.core.ui.LoadingState
+import com.cricketdraft.mobile.core.ui.MetricCard
 import com.cricketdraft.mobile.core.ui.PrimaryAction
+import com.cricketdraft.mobile.core.ui.ScreenHeader
 import com.cricketdraft.mobile.core.ui.SectionTitle
 import com.cricketdraft.mobile.core.ui.StateCard
 import com.cricketdraft.mobile.core.ui.StatusChip
@@ -112,8 +117,8 @@ private fun MainShell(session: SessionState.SignedIn, onLogout: () -> Unit) {
         bottomBar = { BottomNavigation(navController) },
     ) { padding ->
         NavHost(navController, startDestination = start, modifier = Modifier.padding(padding)) {
-            composable(AppDestination.Home.route) { HomeScreen(session, navController, onLogout) }
-            composable(AppDestination.Tournaments.route) { HomeScreen(session, navController, onLogout) }
+            composable(AppDestination.Home.route) { HomeScreen(session, navController, onLogout, isExplore = false) }
+            composable(AppDestination.Tournaments.route) { HomeScreen(session, navController, onLogout, isExplore = true) }
             composable(AppDestination.Profile.route) { ProfileScreen(onBack = { navController.popBackStack() }) }
             composable(AppDestination.AdminWorkspace.route) { AdminTournamentScreen(onBack = { navController.popBackStack() }) }
             composable(AppDestination.SuperAdmin.route) { SuperAdminScreen(onBack = { navController.popBackStack() }) }
@@ -150,42 +155,73 @@ private fun BottomNavigation(navController: NavHostController) {
         ).forEach { (destination, label, icon) ->
             NavigationBarItem(
                 selected = route == destination,
-                onClick = { navController.navigate(destination) { launchSingleTop = true } },
+                onClick = {
+                    navController.navigate(destination) {
+                        launchSingleTop = true
+                        restoreState = true
+                        popUpTo(AppDestination.Home.route) { saveState = true }
+                    }
+                },
                 icon = { Icon(icon, contentDescription = label) },
-                label = { Text(label) },
+                label = { Text(label, style = MaterialTheme.typography.labelMedium) },
             )
         }
     }
 }
 
 @Composable
-private fun HomeScreen(session: SessionState.SignedIn, navController: NavHostController, onLogout: () -> Unit, viewModel: TournamentViewModel = hiltViewModel()) {
+private fun HomeScreen(
+    session: SessionState.SignedIn,
+    navController: NavHostController,
+    onLogout: () -> Unit,
+    isExplore: Boolean,
+    viewModel: TournamentViewModel = hiltViewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    LazyColumn(contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    LazyColumn(contentPadding = PaddingValues(CricketDraftSpacing.Screen), verticalArrangement = Arrangement.spacedBy(CricketDraftSpacing.Section)) {
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("CRICKET DRAFT OS", color = CricketDraftColors.Green, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text("Hi, ${session.user.name ?: "there"}", color = CricketDraftColors.Ink, style = MaterialTheme.typography.headlineMedium)
-                    Text("Everything happening in your tournaments, in one place.", color = CricketDraftColors.Muted)
-                }
-                TextButton(onClick = onLogout) { Text("Log out", color = CricketDraftColors.Green) }
-            }
-        }
-        item {
-            Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = CricketDraftColors.DeepGreen)) {
-                Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("YOUR WORKSPACE", color = CricketDraftColors.Lime, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                    Text(roleGreeting(session.user.roles), color = Color.White, style = MaterialTheme.typography.titleLarge)
-                    Text("Choose an action below. You can always come back here from the Home tab.", color = Color.White.copy(alpha = .75f))
-                    val role = session.user.roles.firstOrNull()
-                    if (role == "captain") PrimaryAction("Find my tournament", { navController.navigate(AppDestination.Tournaments.route) })
-                    if (role == "admin") PrimaryAction("Manage tournaments", { navController.navigate(AppDestination.AdminWorkspace.route) })
-                    if (role == "super_admin") PrimaryAction("Open governance", { navController.navigate(AppDestination.SuperAdmin.route) })
+            if (isExplore) {
+                ScreenHeader("Explore tournaments", "Browse public events, fixtures, standings, and live updates.")
+            } else {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text("CRICKET DRAFT OS", color = CricketDraftColors.Green, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("Hi, ${session.user.name ?: "there"}", color = CricketDraftColors.Ink, style = MaterialTheme.typography.headlineMedium)
+                        Text("Your tournaments and live cricket, in one place.", color = CricketDraftColors.Muted)
+                    }
+                    TextButton(onClick = onLogout) { Text("Log out", color = CricketDraftColors.Green) }
                 }
             }
         }
-        item { SectionTitle("Public tournaments", "Browse events, fixtures, standings, and live updates.") }
+        if (!isExplore) item {
+            val role = session.user.roles.firstOrNull()?.replace('_', ' ')?.replaceFirstChar { it.uppercase() } ?: "Viewer"
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                MetricCard("Role", role, modifier = Modifier.weight(1f))
+                MetricCard("Session", "Secure", "Laravel connected", modifier = Modifier.weight(1f))
+            }
+        }
+        if (!isExplore) item {
+            val role = session.user.roles.firstOrNull()
+            ActionCard(
+                title = "Your workspace",
+                message = roleGreeting(session.user.roles),
+                actionText = when (role) {
+                    "captain" -> "Open my tournament"
+                    "admin" -> "Manage tournaments"
+                    "super_admin" -> "Open governance"
+                    else -> "Explore live cricket"
+                },
+                onAction = {
+                    when (role) {
+                        "captain" -> navController.navigate(AppDestination.Tournaments.route)
+                        "admin" -> navController.navigate(AppDestination.AdminWorkspace.route)
+                        "super_admin" -> navController.navigate(AppDestination.SuperAdmin.route)
+                        else -> navController.navigate(AppDestination.MatchCenter.route)
+                    }
+                },
+            )
+        }
+        if (!isExplore) item { SectionTitle("Public tournaments", "Browse events, fixtures, standings, and live updates.") }
         when (val value = state) {
             TournamentListState.Loading -> item { LoadingState() }
             is TournamentListState.Error -> item { StateCard("Could not load tournaments", value.message, actionText = "Try again", onAction = { viewModel.load() }) }
@@ -211,7 +247,13 @@ private fun HomeScreen(session: SessionState.SignedIn, navController: NavHostCon
                 }
             }
         }
-        item { Spacer(Modifier.height(80.dp)) }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Text("Live updates", color = CricketDraftColors.Muted, style = MaterialTheme.typography.bodySmall)
+                LiveIndicator(isLive = true)
+            }
+            Spacer(Modifier.height(60.dp))
+        }
     }
 }
 
